@@ -1,14 +1,34 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { loginSchema, type LoginInput } from "../../../schemas/login.schema";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { useSignInMutation } from "../../hooks/useSignInMutation";
+import { useGoogleLogin } from "../../hooks/useGoogleSignIn";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const signInMutation = useSignInMutation();
+  const googleLoginMutation = useGoogleLogin();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const onSubmit = (credentials: LoginInput) => {
+    signInMutation.mutate(credentials);
+  };
+
   return (
     <div className="flex flex-col flex-1">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -23,7 +43,12 @@ export default function SignInForm() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                type="button"
+                onClick={() => googleLoginMutation.mutate()}
+                disabled={googleLoginMutation.isPending}
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
+              >
                 <svg
                   width="20"
                   height="20"
@@ -48,7 +73,9 @@ export default function SignInForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                Sign in with Google
+                {googleLoginMutation.isPending
+                  ? "Connecting..."
+                  : "Sign in with Google"}
               </button>
               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
@@ -64,6 +91,11 @@ export default function SignInForm() {
                 Sign in with X
               </button>
             </div>
+            {googleLoginMutation.isError && (
+              <p className="mt-3 text-sm text-center text-red-500" role="alert">
+                {googleLoginMutation.error.message}
+              </p>
+            )}
             <div className="relative py-3 sm:py-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
@@ -74,13 +106,19 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <div className="space-y-6">
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Input
+                    {...register("email")}
+                    placeholder="info@gmail.com"
+                    type="email"
+                    error={Boolean(errors.email)}
+                    hint={errors.email?.message}
+                  />
                 </div>
                 <div>
                   <Label>
@@ -88,8 +126,11 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                      {...register("password")}
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      error={Boolean(errors.password)}
+                      hint={errors.password?.message}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -118,10 +159,20 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    type="submit"
+                    disabled={signInMutation.isPending}
+                  >
+                    {signInMutation.isPending ? "Signing in..." : "Sign in"}
                   </Button>
                 </div>
+                {signInMutation.isError && (
+                  <p className="text-sm text-center text-red-500" role="alert">
+                    {signInMutation.error.message}
+                  </p>
+                )}
               </div>
             </form>
 
