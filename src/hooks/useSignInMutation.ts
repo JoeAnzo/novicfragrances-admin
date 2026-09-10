@@ -1,10 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation,useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import type { LoginInput } from "../../schemas/login.schema";
 import { signInWithEmail } from "../../services/supabase";
 
 export function useSignInMutation() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (credentials: LoginInput) => {
@@ -14,9 +15,10 @@ export function useSignInMutation() {
         throw new Error(result.error);
       }
 
-      return result;
+      return result.user;
     },
-    onSuccess: () => {
+    onSuccess: (user) => {
+      queryClient.setQueryData(["authUser"],user);
       navigate("/");
     },
   });
