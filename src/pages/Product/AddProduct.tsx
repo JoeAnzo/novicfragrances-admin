@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { supabase } from "../../../config/config";
 import { Modal } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
 import CameraScanner from "../../components/cameraScanner";
@@ -20,6 +21,51 @@ export default function AddProductPage() {
   const { isOpen, openModal, closeModal } = useModal(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScanImage = async (base64Image: string) => {
+    setIsScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scan-product", {
+        body: { image: base64Image },
+      });
+
+      if (error) throw error;
+
+      const product = data?.product as Record<string, unknown> | undefined;
+      if (!product) return;
+
+      const fieldMap: Record<string, keyof ProductFormValues> = {
+        name: "name",
+        description: "description",
+        price: "price",
+        brand: "brand",
+        longevity: "longevity",
+        sillage: "sillage",
+        scent_family: "scent_family",
+        base_notes: "base_notes",
+        middle_notes: "middle_notes",
+        top_notes: "top_notes",
+        product_category: "product_catergory",
+      };
+
+      Object.entries(fieldMap).forEach(([responseKey, formKey]) => {
+        const value = product[responseKey];
+        if (typeof value === "string" || typeof value === "number") {
+          setValue(formKey, value as ProductFormValues[typeof formKey], {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Scanning failed:", err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+
 
   const {
     register,
@@ -77,7 +123,7 @@ export default function AddProductPage() {
       <Modal
         isOpen={isOpen}
         onClose={handleClose}
-        className="max-w-4xl p-6 lg:p-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="max-w-4xl p-6 lg:p-8 scrollbar-none"
       >
         <div className="mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">Add Product</h2>
@@ -92,7 +138,7 @@ export default function AddProductPage() {
               <Label htmlFor="name">Product Scanner</Label>
             </div>
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/50">
-              <CameraScanner />
+              <CameraScanner onCapture={handleScanImage} isScanning={isScanning} />
             </div>
           </div>
 

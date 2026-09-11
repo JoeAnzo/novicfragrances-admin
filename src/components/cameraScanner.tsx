@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 // 1. Explicitly interface the component parameters
 interface CameraScannerProps {
   onCapture?: (base64Image: string) => void;
+  isScanning?: boolean;
 }
 
-export default function CameraScanner({ onCapture }: CameraScannerProps) {
+export default function CameraScanner({ onCapture, isScanning = false }: CameraScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
@@ -200,18 +201,20 @@ export default function CameraScanner({ onCapture }: CameraScannerProps) {
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
             onClick={handleCapture}
+            disabled={isScanning}
             style={{
               padding: '12px 24px',
               background: '#00ffcc',
               color: '#000',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer',
               fontWeight: 'bold',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              opacity: isScanning ? 0.6 : 1,
+              cursor: isScanning ? 'wait' : 'pointer'
             }}
           >
-            ⚡ Capture Matrix Frame
+            {isScanning ? 'Scanning Product...' : '⚡ Capture Matrix Frame'}
           </button>
 
           <button 
