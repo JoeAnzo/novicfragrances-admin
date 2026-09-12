@@ -37,6 +37,7 @@ export default function SignInForm() {
             <span className="text-lg font-semibold tracking-[0.2em] text-gray-900 dark:text-white">
               NOVIC
             </span>
+            <br/>
             <span className="mb-2 text-[9px] uppercase tracking-[0.35em] text-gray-500 dark:text-white">
               fragrances
             </span>

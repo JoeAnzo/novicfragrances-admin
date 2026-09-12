@@ -22,6 +22,7 @@ export default function AddProductPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanNotification, setScanNotification] = useState<"recognized" | "unrecognized" | null>(null);
 
   const handleScanImage = async (base64Image: string) => {
     setIsScanning(true);
@@ -34,6 +35,8 @@ export default function AddProductPage() {
 
       const product = data?.product as Record<string, unknown> | undefined;
       if (!product) return;
+
+      setScanNotification(product.is_recognized === false ? "unrecognized" : "recognized");
 
       const fieldMap: Record<string, keyof ProductFormValues> = {
         name: "name",
@@ -100,6 +103,7 @@ export default function AddProductPage() {
     closeModal();
     reset();
     setSelectedImages([]);
+    setScanNotification(null);
     navigate("/");
   };
 
@@ -140,6 +144,18 @@ export default function AddProductPage() {
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/50">
               <CameraScanner onCapture={handleScanImage} isScanning={isScanning} />
             </div>
+            {scanNotification && (
+              <details open className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white text-sm shadow-sm">
+                <summary className="cursor-pointer px-4 py-3 font-medium text-gray-800">
+                  {scanNotification === "unrecognized" ? "Product not recognized" : "Product recognized"}
+                </summary>
+                {scanNotification === "unrecognized" && (
+                  <p className="border-t border-gray-200 px-4 py-3 text-gray-600">
+                    Try another image or enter the product details manually.
+                  </p>
+                )}
+              </details>
+            )}
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
