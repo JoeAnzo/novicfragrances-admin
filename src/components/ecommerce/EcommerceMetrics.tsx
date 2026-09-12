@@ -1,12 +1,43 @@
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   BoxIconLine,
   GroupIcon,
 } from "../../icons";
-import Badge from "../ui/badge/Badge";
+import { useEffect, useState } from "react";
+import {
+  getNumberOfCustomers,
+  getNumberOfOrders,
+} from "../../../services/supabase";
 
 export default function EcommerceMetrics() {
+  const [customerCount, setCustomerCount] = useState<number | null>(null);
+  const [orderCount, setOrderCount] = useState<number | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([getNumberOfCustomers(), getNumberOfOrders()])
+      .then(([customers, orders]) => {
+        if (!isMounted) return;
+
+        setCustomerCount(customers);
+        setOrderCount(orders);
+      })
+      .catch(() => {
+        if (isMounted) setHasError(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const formatCount = (count: number | null) => {
+    if (hasError) return "--";
+    if (count === null) return "...";
+    return count.toLocaleString();
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* <!-- Metric Item Start --> */}
@@ -21,13 +52,9 @@ export default function EcommerceMetrics() {
               Customers
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
+              {formatCount(customerCount)}
             </h4>
           </div>
-          <Badge color="success">
-            <ArrowUpIcon />
-            11.01%
-          </Badge>
         </div>
       </div>
       {/* <!-- Metric Item End --> */}
@@ -43,14 +70,9 @@ export default function EcommerceMetrics() {
               Orders
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {formatCount(orderCount)}
             </h4>
           </div>
-
-          <Badge color="error">
-            <ArrowDownIcon />
-            9.05%
-          </Badge>
         </div>
       </div>
       {/* <!-- Metric Item End --> */}

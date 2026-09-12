@@ -29,13 +29,17 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => null) as { image?: string } | null;
-    const image = body?.image;
+    let image = body?.image;
 
     if (!image) {
       return new Response(JSON.stringify({ error: 'No image provided' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (image.includes(',')) {
+      image = image.split(',')[1];
     }
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');

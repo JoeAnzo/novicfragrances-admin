@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { supabase } from "../../../config/config";
+import { uploadAndSaveCompleteProduct } from "../../../services/supabase";
 import { Modal } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
 import CameraScanner from "../../components/cameraScanner";
@@ -22,7 +23,16 @@ export default function AddProductPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanNotification, setScanNotification] = useState<"recognized" | "unrecognized" | null>(null);
+  const [scanNotification, setScanNotification] = useState<
+    | "recognized"
+    | "unrecognized"
+    | "scan-error"
+    | "save-error"
+    | "validation-error"
+    | "saved"
+    | null
+  >(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleScanImage = async (base64Image: string) => {
     setIsScanning(true);
@@ -52,6 +62,29 @@ export default function AddProductPage() {
         product_category: "product_catergory",
       };
 
+      const emptyValues: Record<string, string | number> = {
+        name: "",
+        description: "",
+        price: 0,
+        brand: "",
+        longevity: "",
+        sillage: "",
+        scent_family: "",
+        base_notes: "",
+        middle_notes: "",
+        top_notes: "",
+        product_category: "Perfume",
+      };
+
+      Object.entries(fieldMap).forEach(([responseKey, formKey]) => {
+        setValue(formKey, emptyValues[responseKey] as ProductFormValues[typeof formKey], {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      });
+
+      if (product.is_recognized === false) return;
+
       Object.entries(fieldMap).forEach(([responseKey, formKey]) => {
         const value = product[responseKey];
         if (typeof value === "string" || typeof value === "number") {
@@ -63,6 +96,7 @@ export default function AddProductPage() {
       });
     } catch (err) {
       console.error("Scanning failed:", err);
+      setScanNotification("scan-error");
     } finally {
       setIsScanning(false);
     }
@@ -107,6 +141,10 @@ export default function AddProductPage() {
     navigate("/");
   };
 
+  const handleInvalidSubmit = () => {
+    setScanNotification("validation-error");
+  };
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     const nextFiles = files.slice(0, 3);
@@ -114,12 +152,43 @@ export default function AddProductPage() {
     setValue("images", nextFiles, { shouldValidate: true, shouldDirty: true });
   };
 
-  const onSubmit = (values: ProductFormValues) => {
-    console.log("Product submitted:", values);
-    closeModal();
-    reset();
-    setSelectedImages([]);
-    navigate("/");
+  const onSubmit = async (values: ProductFormValues) => {
+    if (selectedImages.length < 3) {
+      setScanNotification("save-error");
+      return;
+    }
+
+    setIsSaving(true);
+    setScanNotification(null);
+
+    try {
+      await uploadAndSaveCompleteProduct(selectedImages, {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        category: values.product_catergory,
+        brand: values.brand,
+        stock_quantity: values.stock_quantity,
+        is_active: values.is_active,
+        longevity: values.longevity,
+        sillage: values.sillage,
+        scent_family: values.scent_family,
+        top_notes: values.top_notes,
+        middle_notes: values.middle_notes,
+        base_notes: values.base_notes,
+      });
+
+      setScanNotification("saved");
+      closeModal();
+      reset();
+      setSelectedImages([]);
+      navigate("/");
+    } catch (err) {
+      console.error("Product save failed:", err);
+      setScanNotification("save-error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -136,7 +205,11 @@ export default function AddProductPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <form
+          onSubmit={handleSubmit(onSubmit, handleInvalidSubmit)}
+          className="space-y-5"
+          noValidate
+        >
           <div>
             <div className="mb-3">
               <Label htmlFor="name">Product Scanner</Label>
@@ -145,16 +218,43 @@ export default function AddProductPage() {
               <CameraScanner onCapture={handleScanImage} isScanning={isScanning} />
             </div>
             {scanNotification && (
-              <details open className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white text-sm shadow-sm">
-                <summary className="cursor-pointer px-4 py-3 font-medium text-gray-800">
-                  {scanNotification === "unrecognized" ? "Product not recognized" : "Product recognized"}
-                </summary>
-                {scanNotification === "unrecognized" && (
-                  <p className="border-t border-gray-200 px-4 py-3 text-gray-600">
-                    Try another image or enter the product details manually.
-                  </p>
-                )}
-              </details>
+              <div
+                role="status"
+                className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white text-sm shadow-sm animate-[product-notification-in_220ms_ease-out]"
+              >
+                <div className="flex items-center justify-between gap-3 px-4 py-3 font-medium text-gray-800">
+                  <span>
+                    {scanNotification === "unrecognized" && "Product not recognized"}
+                    {scanNotification === "recognized" && "Product recognized"}
+                    {scanNotification === "scan-error" && "Product details could not be fetched"}
+                    {scanNotification === "save-error" && "Product could not be saved"}
+                    {scanNotification === "validation-error" && "Please fix the highlighted fields"}
+                    {scanNotification === "saved" && "Product saved successfully"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setScanNotification(null)}
+                    className="text-gray-400 hover:text-gray-700"
+                    aria-label="Dismiss notification"
+                  >
+                    X
+                  </button>
+                </div>
+                <div className="border-t border-gray-200 px-4 py-3 text-gray-600">
+                  {scanNotification === "unrecognized" && "Try another image or enter the product details manually."}
+                  {scanNotification === "scan-error" && "The scanner could not connect to the product details service. Enter the details manually or try again."}
+                  {scanNotification === "save-error" && "Select at least three images and verify the form before saving again."}
+                  {scanNotification === "validation-error" && (
+                    <ul className="list-disc space-y-1 pl-5">
+                      {Object.values(errors).map((error, index) => (
+                        <li key={`${error?.message ?? "validation-error"}-${index}`}>
+                          {error?.message ?? "Check this field"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -372,7 +472,9 @@ export default function AddProductPage() {
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit">Save Product</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving Product..." : "Save Product"}
+            </Button>
           </div>
         </form>
       </Modal>

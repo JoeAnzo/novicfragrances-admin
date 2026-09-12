@@ -129,16 +129,22 @@ export default function CameraScanner({ onCapture, isScanning = false }: CameraS
   }, []);
 
   const handleCapture = () => {
-    if (!canvasRef.current) return;
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
 
-    // 1. Capture image data URL directly from active rendering canvas
-    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+    const context = captureCanvas.getContext('2d');
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+    const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.85);
     
-    // 2. Safely extract base64 payload string part after the comma index
+    // Safely extract the base64 payload after the data URL prefix.
     const base64Parts = dataUrl.split(',');
     const cleanBase64 = base64Parts.length > 1 ? base64Parts[1] : '';
 
-    // 3. Emit clean string safely up into wrapper components
     if (onCapture && cleanBase64) {
       onCapture(cleanBase64);
     }

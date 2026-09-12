@@ -33,7 +33,7 @@ export const productSchema = z.object({
   base_notes: optionalString,
   middle_notes: optionalString,
   top_notes: optionalString,
-  images: z.array(z.instanceof(File)).min(3, "Please upload at least 3 product images").optional(),
+  images: z.array(z.instanceof(File)).min(3, "Please upload at least 3 product images"),
   is_active: z.boolean(),
 });
 
