@@ -34,11 +34,11 @@ export default function SignInForm() {
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
-            <span className="text-lg font-semibold tracking-[0.2em] text-gray-900 dark:text-white">
+            <span className="text-lg text-center font-semibold tracking-[0.2em] text-gray-900 dark:text-white">
               NOVIC
             </span>
             <br/>
-            <span className="mb-2 text-[9px] uppercase tracking-[0.35em] text-gray-500 dark:text-white">
+            <span className="mb-2 text-center text-[9px]  uppercase tracking-[0.35em] text-gray-500 dark:text-white">
               fragrances
             </span>
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
