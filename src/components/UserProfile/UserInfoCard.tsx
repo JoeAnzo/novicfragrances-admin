@@ -3,9 +3,20 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useUser } from "../../hooks/useUser";
 
 export default function UserInfoCard() {
+  const { data: user } = useUser();
   const { isOpen, openModal, closeModal } = useModal();
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const displayName =
+    (typeof metadata?.full_name === "string" && metadata.full_name) ||
+    (typeof metadata?.name === "string" && metadata.name) ||
+    "Musharof Chowdhury";
+  const nameParts = displayName.trim().split(/\s+/);
+  const firstName = nameParts[0] || "Musharof";
+  const lastName = nameParts.slice(1).join(" ") || "Chowdhury";
+  const email = user?.email || "randomuser@pimjo.com";
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
@@ -25,7 +36,7 @@ export default function UserInfoCard() {
                 First Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Musharof
+                {firstName}
               </p>
             </div>
 
@@ -34,7 +45,7 @@ export default function UserInfoCard() {
                 Last Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Chowdhury
+                {lastName}
               </p>
             </div>
 
@@ -43,7 +54,7 @@ export default function UserInfoCard() {
                 Email address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
+                {email}
               </p>
             </div>
 
@@ -143,17 +154,17 @@ export default function UserInfoCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input type="text" value={firstName} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input type="text" value={lastName} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input type="text" value={email} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">

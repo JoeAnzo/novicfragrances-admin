@@ -3,9 +3,24 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useUser } from "../../hooks/useUser";
 
 export default function UserMetaCard() {
+  const { data: user } = useUser();
   const { isOpen, openModal, closeModal } = useModal();
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const displayName =
+    (typeof metadata?.full_name === "string" && metadata.full_name) ||
+    (typeof metadata?.name === "string" && metadata.name) ||
+    "Musharof Chowdhury";
+  const avatarUrl =
+    (typeof metadata?.avatar_url === "string" && metadata.avatar_url) ||
+    (typeof metadata?.picture === "string" && metadata.picture) ||
+    "/images/user/owner.jpg";
+  const nameParts = displayName.trim().split(/\s+/);
+  const firstName = nameParts[0] || "Musharof";
+  const lastName = nameParts.slice(1).join(" ") || "Chowdhury";
+  const email = user?.email || "randomuser@pimjo.com";
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
@@ -17,11 +32,11 @@ export default function UserMetaCard() {
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
-              <img src="/images/user/owner.jpg" alt="user" />
+              <img src={avatarUrl} alt={displayName} />
             </div>
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                Musharof Chowdhury
+                {displayName}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -195,17 +210,17 @@ export default function UserMetaCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input type="text" value={firstName} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input type="text" value={lastName} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input type="text" value={email} />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
